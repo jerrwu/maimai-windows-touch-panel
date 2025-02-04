@@ -32,10 +32,6 @@ REVERSE_MONITOR = False
 TOUCH_THREAD_SLEEP_MODE = False
 # 每次 sleep 的延迟, 单位: 微秒, 默认 10 微秒
 TOUCH_THREAD_SLEEP_DELAY = 10
-# 自定义屏幕宽（0则为自动获取主屏幕的值）
-SCREEN_WIDTH: 0
-# 自定义屏幕高（0则为自动获取主屏幕的值）
-SCREEN_HEIGHT: 0
 # 窗口图标路径
 icon_path = './image/favicon.ico'
 
@@ -159,7 +155,8 @@ class SerialManager:
             self.now_touch_data = s_temp[0]
             self.send_touch(self.p1Serial, s_temp[0])
             self.now_touch_keys = s_temp[1]
-        print("Touch Keys:", s_temp[1])
+        if DEBUG: 
+            print("Touch Keys:", s_temp[1])
         # else:
         #     self.send_touch(self.p2Serial, s_temp[0])
 
@@ -251,12 +248,13 @@ def get_real_resolution():
 def get_screen_size():
     w = GetSystemMetrics(0)
     h = GetSystemMetrics(1)
-    if(SCREEN_WIDTH != 0):
-        w = SCREEN_WIDTH
-    if(SCREEN_HEIGHT != 0):
-        h = SCREEN_HEIGHT
-   
     return w, h
+
+
+def draw_rect_alpha(surface, color, rect):
+    shape_surf = pygame.Surface(rect.size, pygame.SRCALPHA)
+    pygame.draw.rect(shape_surf, color, shape_surf.get_rect())
+    surface.blit(shape_surf, rect)
 
 
 def getevent():
@@ -267,15 +265,28 @@ def getevent():
     icon = pygame.image.load(icon_path)
     pygame.display.set_icon(icon)
     screen_width, screen_height = MONITOR_SIZE
-    screen = pygame.display.set_mode((screen_width, screen_height))
+    screen = pygame.display.set_mode((screen_width, screen_height), pygame.SRCALPHA, display=0)
     pygame.display.set_caption("maimai-windows-touch-panel")
 
     fuchsia = (128, 128, 128)
     hwnd = pygame.display.get_wm_info()["window"]
     win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
                            win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)
-    win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*fuchsia), 1, win32con.LWA_ALPHA)
+    win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*fuchsia), 38, win32con.LWA_ALPHA)
+    # win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*fuchsia), 0, win32con.LWA_COLORKEY)
+    # win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, screen_width, screen_height, 
+    #                   win32con.SWP_NOACTIVATE | win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
     screen.fill(fuchsia)  # 使用透明背景
+
+    background_image = pygame.image.load("image\\image_bg.png").convert_alpha()
+    screen.blit(background_image, (0, 0))
+    button_aime = pygame.Rect(55, 485, 188, 130)  # x, y, width, height
+    button_start = pygame.Rect(950, 512, 67, 75)
+    button_c = pygame.Rect(930, 1815, 150, 110)
+    button_x = pygame.Rect(0, 1815, 150, 110)
+    draw_rect_alpha(screen, (0, 0, 0, 0), button_aime)
+    draw_rect_alpha(screen, (0, 0, 0, 0), button_start)
+    pygame.display.update()
 
     clock = pygame.time.Clock()
     while True:
@@ -290,6 +301,17 @@ def getevent():
                 clac_touch_x = 0
                 clac_touch_y = 0
                 if event.type == pygame.FINGERDOWN or event.type == pygame.FINGERMOTION:
+                    if button_aime.collidepoint(touch_x, touch_y):
+                        win32api.keybd_event(win32con.VK_RETURN, 0, 0, 0)
+                    elif button_start.collidepoint(touch_x, touch_y):
+                        win32api.keybd_event(0x33, 0, 0, 0)
+                        win32api.keybd_event(0x33, 0, win32con.KEYEVENTF_KEYUP, 0)
+                    elif button_c.collidepoint(touch_x, touch_y):
+                        win32api.keybd_event(0x43, 0, 0, 0)
+                        win32api.keybd_event(0x43, 0, win32con.KEYEVENTF_KEYUP, 0)
+                    elif button_x.collidepoint(touch_x, touch_y):
+                        win32api.keybd_event(0x58, 0, 0, 0)
+                        win32api.keybd_event(0x58, 0, win32con.KEYEVENTF_KEYUP, 0)
                     touch_data[str(touch_id)] = {}
                     if not REVERSE_MONITOR:
                         clac_touch_x = int(touch_x * x_scale)
@@ -300,6 +322,8 @@ def getevent():
                     touch_data[str(touch_id)]["x"] = clac_touch_x
                     touch_data[str(touch_id)]["y"] = clac_touch_y
                 elif event.type == pygame.FINGERUP:
+                    if button_aime.collidepoint(touch_x, touch_y):
+                        win32api.keybd_event(win32con.VK_RETURN, 0, win32con.KEYEVENTF_KEYUP, 0)
                     touch_data.pop(str(touch_id))
                 convert(touch_data)
                 if not DEBUG:
@@ -334,8 +358,6 @@ if __name__ == "__main__":
         TOUCH_THREAD_SLEEP_MODE = c["TOUCH_THREAD_SLEEP_MODE"]
         TOUCH_THREAD_SLEEP_DELAY = c["TOUCH_THREAD_SLEEP_DELAY"]
         exp_image_dict = c["exp_image_dict"]
-        SCREEN_WIDTH = c["SCREEN_WIDTH"]
-        SCREEN_HEIGHT = c["SCREEN_HEIGHT"]
     else:
         print("未找到配置文件, 使用默认配置")
 
