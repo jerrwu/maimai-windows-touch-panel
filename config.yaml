@@ -1,5 +1,7 @@
 # 是否开启调试模式
 DEBUG: false
+# 是否使用虚拟外键
+EMU_BTN: true
 # 编辑好的图片路径
 IMAGE_PATH: "./image/image_monitor.png"
 # 串口号

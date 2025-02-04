@@ -16,6 +16,8 @@ import copy
 
 # 是否开启调试模式
 DEBUG = False
+# 是否使用虚拟外键
+EMU_BTN = True
 # 编辑好的图片路径
 IMAGE_PATH = "./image/image_monitor.png"
 # 串口号
@@ -272,18 +274,19 @@ def getevent():
     hwnd = pygame.display.get_wm_info()["window"]
     win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE,
                            win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED)
-    win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*fuchsia), 38, win32con.LWA_ALPHA)
+    win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*fuchsia), 38 if EMU_BTN else 1, win32con.LWA_ALPHA)
     # win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(*fuchsia), 0, win32con.LWA_COLORKEY)
     # win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, screen_width, screen_height, 
     #                   win32con.SWP_NOACTIVATE | win32con.SWP_NOMOVE | win32con.SWP_NOSIZE)
     screen.fill(fuchsia)  # 使用透明背景
 
-    background_image = pygame.image.load("image\\image_bg.png").convert_alpha()
-    screen.blit(background_image, (0, 0))
+    if EMU_BTN: 
+        background_image = pygame.image.load("image\\image_bg.png").convert_alpha()
+        screen.blit(background_image, (0, 0))
+        button_c = pygame.Rect(930, 1815, 150, 110)
+        button_x = pygame.Rect(0, 1815, 150, 110)
     button_aime = pygame.Rect(55, 485, 188, 130)  # x, y, width, height
     button_start = pygame.Rect(950, 512, 67, 75)
-    button_c = pygame.Rect(930, 1815, 150, 110)
-    button_x = pygame.Rect(0, 1815, 150, 110)
     draw_rect_alpha(screen, (0, 0, 0, 0), button_aime)
     draw_rect_alpha(screen, (0, 0, 0, 0), button_start)
     pygame.display.update()
@@ -301,17 +304,18 @@ def getevent():
                 clac_touch_x = 0
                 clac_touch_y = 0
                 if event.type == pygame.FINGERDOWN or event.type == pygame.FINGERMOTION:
+                    if EMU_BTN: 
+                        if button_c.collidepoint(touch_x, touch_y):
+                            win32api.keybd_event(0x43, 0, 0, 0)
+                            win32api.keybd_event(0x43, 0, win32con.KEYEVENTF_KEYUP, 0)
+                        elif button_x.collidepoint(touch_x, touch_y):
+                            win32api.keybd_event(0x58, 0, 0, 0)
+                            win32api.keybd_event(0x58, 0, win32con.KEYEVENTF_KEYUP, 0)
                     if button_aime.collidepoint(touch_x, touch_y):
                         win32api.keybd_event(win32con.VK_RETURN, 0, 0, 0)
                     elif button_start.collidepoint(touch_x, touch_y):
                         win32api.keybd_event(0x33, 0, 0, 0)
                         win32api.keybd_event(0x33, 0, win32con.KEYEVENTF_KEYUP, 0)
-                    elif button_c.collidepoint(touch_x, touch_y):
-                        win32api.keybd_event(0x43, 0, 0, 0)
-                        win32api.keybd_event(0x43, 0, win32con.KEYEVENTF_KEYUP, 0)
-                    elif button_x.collidepoint(touch_x, touch_y):
-                        win32api.keybd_event(0x58, 0, 0, 0)
-                        win32api.keybd_event(0x58, 0, win32con.KEYEVENTF_KEYUP, 0)
                     touch_data[str(touch_id)] = {}
                     if not REVERSE_MONITOR:
                         clac_touch_x = int(touch_x * x_scale)
@@ -349,6 +353,7 @@ if __name__ == "__main__":
         with open(yaml_file_path, 'r', encoding='utf-8') as file:
             c = yaml.safe_load(file)
         DEBUG = c["DEBUG"]
+        EMU_BTN = c["EMU_BTN"]
         IMAGE_PATH = c["IMAGE_PATH"]
         COM_PORT = c["COM_PORT"]
         COM_BAUDRATE = c["COM_BAUDRATE"]
