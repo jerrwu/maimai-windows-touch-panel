@@ -9,7 +9,7 @@ COM_PORT: "COM33"
 # 比特率
 COM_BAUDRATE: 9600
 # 检测区域的像素值范围 120 default
-AREA_SCOPE: 100
+AREA_SCOPE: 85
 # 检测区域圆上点的数量
 AREA_POINT_NUM: 8
 # 是否开启屏幕反转
